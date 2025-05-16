@@ -1,5 +1,3 @@
-package tests;
-
 import org.hyperskill.hstest.stage.StageTest;
 import org.hyperskill.hstest.testcase.CheckResult;
 import org.hyperskill.hstest.testcase.TestCase;
@@ -17,7 +15,6 @@ class BlockParseException extends Exception {
         super(msg);
     }
 }
-
 
 
 class Block {
@@ -76,7 +73,7 @@ class Block {
         try {
             Matcher m1 = p.matcher(lines.get(1));
             Matcher m2 = p.matcher(lines.get(2));
-            if (!m1.find() || !m2.find()){
+            if (!m1.find() || !m2.find()) {
                 throw new BlockParseException("All miner names should be in the format 'miner#', as in 'miner1'");
             }
 
@@ -86,7 +83,7 @@ class Block {
             }
         } catch (IllegalStateException e) {
             throw new BlockParseException("Illegal state ");
-        } catch (IndexOutOfBoundsException e){
+        } catch (IndexOutOfBoundsException e) {
             throw new BlockParseException("All miner names should be in the format 'miner#', as in 'miner1'");
         }
 
@@ -104,7 +101,6 @@ class Block {
         }
 
         block.id = Integer.parseInt(id);
-
 
 
         if (!lines.get(4).startsWith("Timestamp:")) {
@@ -137,7 +133,6 @@ class Block {
         }
 
         block.magic = Long.parseLong(magic);
-
 
 
         if (!lines.get(6).equals("Hash of the previous block:")) {
@@ -188,7 +183,7 @@ class Block {
 
         String firstMiner = minerIds.get(0);
         minerIds.removeIf(s -> Objects.equals(s, firstMiner));
-        if (minerIds.size() == 0){
+        if (minerIds.size() == 0) {
             throw new BlockParseException("All blocks are mined by a single miner!");
         }
 
@@ -198,6 +193,7 @@ class Block {
 
 class Clue {
     String zeros;
+
     Clue(int n) {
         zeros = "0".repeat(n);
     }

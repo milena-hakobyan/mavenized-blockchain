@@ -3,11 +3,13 @@ package blockchain;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
-public class TransactionGenerator implements Runnable{
+public class TransactionGenerator implements Runnable {
     Blockchain blockchain = Blockchain.getInstance();
+    protected static final AtomicLong TRANSACTION_ID = new AtomicLong();
+
     List<String> people = List.of("Alice", "Bob", "Charlie", "David", "Eve");
     List<String> institutions = List.of(
             "CarShop", "BeautyShop", "FastFood", "ShoeStore", "ElectronicsMart",
@@ -17,25 +19,51 @@ public class TransactionGenerator implements Runnable{
     );
     List<String> miners = List.of("miner1", "miner2", "miner3", "miner4", "miner5");
     // Combine all possible senders/receivers:
-    List<String> allEntities = Stream.of(people, institutions, miners)
-            .flatMap(List::stream)
-            .collect(Collectors.toList());
+    private final List<Client> clients = new ArrayList<>();
+
+    public TransactionGenerator() {
+        // Register regular clients (people + institutions)
+        Stream.of(people, institutions)
+                .flatMap(List::stream)
+                .map(Client::new)
+                .forEach(client -> {
+                    clients.add(client);
+                    blockchain.registerClient(client);
+                });
+        // Register miners separately with IDs (1 to 5)
+        for (int i = 0; i < miners.size(); i++) {
+            String name = miners.get(i);
+            Miner miner = new Miner(name);
+            clients.add(miner);
+            blockchain.registerMiner(i + 1, miner);  // Miner ID = i + 1
+        }
+    }
 
 
     @Override
     public void run() {
-        while(blockchain.isAcceptingMessages()) {
+        while (blockchain.isAcceptingTransactions()) {
             Random random = new Random();
             try {
-                Thread.sleep(200); //generate a new message every 200ms
-                String sender = allEntities.get(random.nextInt(allEntities.size()));
-                String receiver = allEntities.get(random.nextInt(allEntities.size()));
+                Thread.sleep(100); //generate a new transaction every 100ms
+
+
+                Client sender = clients.get(random.nextInt(clients.size()));
+                Client receiver = clients.get(random.nextInt(clients.size()));
+
+
+                long id = TRANSACTION_ID.incrementAndGet();
                 int amount = random.nextInt(101);
-                if (!sender.equals(receiver)) {
-                    blockchain.addTransaction(sender, receiver, amount);
-                    blockchain.addPendingTransaction(sender + " sent " + amount + "VC to " + receiver);
+                byte[] signature = sender.sign(id, receiver.getPublicKey(), amount);
+                String txText = sender.getName() + " sent " + amount + "VC to " + receiver.getName();
+                Transaction transaction = new Transaction(id, amount, sender.getPublicKey(), receiver.getPublicKey(), signature, txText, false);
+
+                if (!sender.getPublicKey().equals(receiver.getPublicKey())) {
+                    blockchain.addTransaction(transaction);
                 }
             } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            } catch (Exception e) {
                 throw new RuntimeException(e);
             }
 
