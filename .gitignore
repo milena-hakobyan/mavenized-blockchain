@@ -88,7 +88,7 @@ target/
 Topics/
 # idea config
 .idea
-./DS_Store
+.DS_Store
 
 Blockchain with Java/A proof of work concept
 Blockchain with Java/Blockchain essentials
